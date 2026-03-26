@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taoscriptions Auto Mint</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    h1 {
+      color: #00ff88;
+      font-size: 22px;
+      margin-bottom: 6px;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 12px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    input {
+      background: #0d0d0d;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { border-color: #00ff88; }
+
+    input[type="password"] { letter-spacing: 2px; }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #00ff88;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+
+    button:hover { background: #00e67a; }
+    button:active { transform: scale(0.98); }
+    button:disabled {
+      background: #2a2a2a;
+      color: #555;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 进度条 */
+    .progress-wrap {
+      display: none;
+      margin-top: 16px;
+    }
+
+    .progress-bar-bg {
+      background: #1e1e1e;
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #00ff88;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .progress-text {
+      font-size: 12px;
+      color: #888;
+      text-align: right;
+    }
+
+    /* 日志 */
+    .log-box {
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 16px;
+      height: 280px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .log-line { display: block; }
+    .log-info  { color: #888; }
+    .log-success { color: #00ff88; }
+    .log-fail  { color: #ff4d4d; }
+    .log-done  { color: #ffd700; font-weight: bold; }
+    .log-error { color: #ff4d4d; font-weight: bold; }
+
+    /* 统计 */
+    .stats {
+      display: none;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-box {
+      background: #0d0d0d;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 28px;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+
+    .stat-label { font-size: 11px; color: #666; margin-top: 4px; }
+    .stat-total .stat-num  { color: #888; }
+    .stat-success .stat-num { color: #00ff88; }
+    .stat-fail .stat-num   { color: #ff4d4d; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TAOSCRIPTIONS</h1>
+    <p class="subtitle">TAO-20 Auto Mint Tool</p>
+
+    <div class="card">
+      <h2>钱包 & 参数</h2>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>助记词（12个单词，空格分隔）</label>
+          <input type="password" id="mnemonic" placeholder="word1 word2 word3 ..." autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>铭文代码 (Tick)</label>
+          <input type="text" id="tick" value="TAOS" />
+        </div>
+        <div class="form-group">
+          <label>每次数量 (Amt)</label>
+          <input type="text" id="amt" value="420" />
+        </div>
+        <div class="form-group">
+          <label>Mint 次数</label>
+          <input type="number" id="count" value="10" min="1" max="500" />
+        </div>
+        <div class="form-group">
+          <label>间隔秒数</label>
+          <input type="number" id="delay" value="6" min="1" step="0.5" />
+        </div>
+      </div>
+      <button id="mintBtn" onclick="startMint()">开始 Mint</button>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressText">0 / 0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>运行日志</h2>
+      <div class="log-box" id="logBox"></div>
+      <div class="stats" id="stats">
+        <div class="stat-box stat-total">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">总计</div>
+        </div>
+        <div class="stat-box stat-success">
+          <div class="stat-num" id="statSuccess">0</div>
+          <div class="stat-label">成功</div>
+        </div>
+        <div class="stat-box stat-fail">
+          <div class="stat-num" id="statFail">0</div>
+          <div class="stat-label">失败</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let running = false;
+
+    function log(msg, cls = "log-info") {
+      const box = document.getElementById("logBox");
+      const line = document.createElement("span");
+      line.className = `log-line ${cls}`;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      box.appendChild(line);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function setProgress(current, total) {
+      const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+      document.getElementById("progressBar").style.width = pct + "%";
+      document.getElementById("progressText").textContent = `${current} / ${total}  (${pct}%)`;
+    }
+
+    async function startMint() {
+      if (running) return;
+
+      const mnemonic = document.getElementById("mnemonic").value.trim();
+      const tick     = document.getElementById("tick").value.trim();
+      const amt      = document.getElementById("amt").value.trim();
+      const count    = parseInt(document.getElementById("count").value);
+      const delay    = parseFloat(document.getElementById("delay").value);
+
+      if (!mnemonic) { alert("请填写助记词"); return; }
+
+      running = true;
+      document.getElementById("mintBtn").disabled = true;
+      document.getElementById("mintBtn").textContent = "Mint 进行中...";
+      document.getElementById("logBox").innerHTML = "";
+      document.getElementById("progressWrap").style.display = "block";
+      document.getElementById("stats").style.display = "none";
+      setProgress(0, count);
+
+      try {
+        const res = await fetch("/mint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mnemonic, tick, amt, count, delay, protocol: "tao-20" }),
+        });
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+
+          const lines = buf.split("\n\n");
+          buf = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith("data:")) continue;
+            const data = JSON.parse(line.slice(5).trim());
+
+            if (data.type === "info") {
+              log(data.msg, "log-info");
+            } else if (data.type === "progress") {
+              log(data.msg, "log-info");
+              setProgress(data.current - 1, data.total);
+            } else if (data.type === "success") {
+              log(data.msg, "log-success");
+              setProgress(data.current, data.total);
+            } else if (data.type === "fail") {
+              log(data.msg, "log-fail");
+              setProgress(data.current, data.total);
+            } else if (data.type === "error") {
+              log(data.msg, "log-error");
+            } else if (data.type === "done") {
+              log(`完成！成功: ${data.success}，失败: ${data.fail}，共: ${data.total}`, "log-done");
+              setProgress(data.total, data.total);
+              document.getElementById("stats").style.display = "grid";
+              document.getElementById("statTotal").textContent   = data.total;
+              document.getElementById("statSuccess").textContent = data.success;
+              document.getElementById("statFail").textContent    = data.fail;
+            }
+          }
+        }
+      } catch (e) {
+        log("请求失败: " + e.message, "log-error");
+      }
+
+      running = false;
+      document.getElementById("mintBtn").disabled = false;
+      document.getElementById("mintBtn").textContent = "开始 Mint";
+    }
+  </script>
+</body>
+</html>
